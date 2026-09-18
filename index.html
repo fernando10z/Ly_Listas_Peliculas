@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nuestras Películas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --accent:#ff7fa4; --rosa:#ffa9c2; --oro:rgba(224,167,120,.9); --txt:#ffe9f0; --serif:'Cormorant Garamond',Georgia,serif; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#1a0b13; color:var(--txt); font-family:Jost,system-ui,sans-serif; }
+  .fondo { min-height:100vh; position:relative; overflow:hidden; padding:clamp(28px,6vw,72px) clamp(16px,5vw,48px);
+    background:radial-gradient(120% 80% at 18% 0%, #4a1230 0%, #2a0b1c 45%, #170812 100%); }
+  .fondo::before { content:''; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(40% 30% at 85% 12%, rgba(255,138,172,.16), transparent 70%), radial-gradient(35% 25% at 8% 70%, rgba(214,160,95,.12), transparent 70%); }
+  main { position:relative; z-index:1; max-width:680px; margin:0 auto; display:flex; flex-direction:column; gap:clamp(22px,3vw,34px); }
+
+  header { display:flex; flex-direction:column; gap:10px; }
+  .eyebrow { font:500 11px/1 Jost,sans-serif; letter-spacing:.34em; text-transform:uppercase; color:var(--oro); }
+  h1 { margin:0; font-family:var(--serif); font-weight:600; font-size:clamp(40px,8vw,68px); line-height:1; color:#fff4f7; text-wrap:pretty; }
+  h1 em { color:var(--rosa); }
+  header p { margin:0; max-width:44ch; font:300 15px/1.6 Jost,sans-serif; color:rgba(255,229,238,.62); }
+
+  form { display:flex; flex-wrap:wrap; gap:10px; padding:8px; border-radius:999px; background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,169,194,.22); box-shadow:0 18px 44px -28px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.06); }
+  form input { flex:1 1 220px; min-width:0; background:transparent; border:none; outline:none; color:var(--txt); font:400 16px/1 Jost,sans-serif; padding:14px 18px; }
+  form input::placeholder { color:rgba(255,229,238,.42); }
+  form button { flex:none; border:none; cursor:pointer; padding:14px 26px; border-radius:999px; background:linear-gradient(140deg,#ff7fa4,#c4325e);
+    color:#fff; font:500 14px/1 Jost,sans-serif; letter-spacing:.06em; box-shadow:0 10px 26px -12px rgba(196,50,94,.85); }
+  form button:hover { filter:brightness(1.08); }
+
+  .contador { display:flex; align-items:baseline; gap:8px; }
+  .contador b { font:400 clamp(26px,5vw,38px)/1 var(--serif); color:var(--rosa); }
+  .contador span { font:300 14px/1 Jost,sans-serif; letter-spacing:.06em; color:rgba(255,229,238,.6); }
+
+  .vacio { padding:44px 28px; text-align:center; border:1px dashed rgba(255,169,194,.28); border-radius:20px; background:rgba(255,255,255,.02); }
+  .vacio p { margin:0; font:italic 22px var(--serif); color:rgba(255,229,238,.72); }
+  .vacio small { display:block; margin-top:8px; font:300 13px/1.5 Jost,sans-serif; color:rgba(255,229,238,.45); }
+
+  ul { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:12px; }
+  li { display:flex; align-items:center; gap:16px; padding:16px 18px; border-radius:18px; border:1px solid rgba(255,169,194,.16);
+    background:linear-gradient(120deg,rgba(255,255,255,.07),rgba(255,255,255,.03)); box-shadow:0 14px 34px -26px rgba(0,0,0,.9); }
+  li:hover { border-color:rgba(255,169,194,.38); }
+  .corazon { flex:none; width:38px; height:38px; display:grid; place-items:center; border-radius:50%; cursor:pointer; font-size:17px; line-height:1;
+    background:rgba(255,169,194,.1); border:1px solid rgba(255,169,194,.3); color:rgba(255,229,238,.35); }
+  .nombre { flex:1; min-width:0; font:400 17px/1.35 Jost,sans-serif; color:#ffeef3; overflow-wrap:anywhere; }
+  .etiqueta { display:none; flex:none; font:500 10px/1 Jost,sans-serif; letter-spacing:.2em; text-transform:uppercase; color:rgba(224,167,120,.95);
+    padding:6px 10px; border-radius:999px; background:rgba(224,167,120,.14); }
+  .quitar { flex:none; width:30px; height:30px; display:grid; place-items:center; border:none; border-radius:50%; cursor:pointer;
+    background:transparent; color:rgba(255,229,238,.35); font:300 18px/1 Jost,sans-serif; }
+  .quitar:hover { background:rgba(255,127,164,.18); color:var(--rosa); }
+  li.vista .corazon { color:var(--accent); }
+  li.vista .nombre { font-weight:300; color:rgba(255,229,238,.42); text-decoration:line-through; text-decoration-color:rgba(255,169,194,.5); }
+  li.vista .etiqueta { display:block; }
+
+  .pie { margin:6px 0 0; font:italic 16px var(--serif); color:rgba(255,229,238,.4); }
+
+  .petalos span { position:absolute; bottom:-20px; color:var(--accent); opacity:0; pointer-events:none; animation:floatUp linear infinite; }
+  @keyframes floatUp { 0%{transform:translateY(0) scale(.9);opacity:0} 15%{opacity:.5} 100%{transform:translateY(-120px) scale(1.15);opacity:0} }
+  @media (prefers-reduced-motion:reduce) { .petalos { display:none; } }
+</style>
+</head>
+<body>
+<div class="fondo">
+  <main>
+    <header>
+      <span class="eyebrow">Nuestra lista compartida</span>
+      <h1>Películas <em>para ver juntos</em></h1>
+      <p>Agrega lo que quieras ver.</p>
+    </header>
+
+    <!-- Spotify solo reproduce con un clic dentro de su reproductor: no se puede ocultar ni autoiniciar -->
+    <iframe style="border-radius:12px" src="https://open.spotify.com/embed/playlist/5ixfZy60DziUcaco2kaqBT?utm_source=generator&theme=0"
+      width="100%" height="152" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+
+    <form id="form">
+      <input type="text" id="nombre" placeholder="¿Qué vemos esta noche?" aria-label="Nombre de la película">
+      <button>Agregar</button>
+    </form>
+
+    <div class="contador"><b id="pendientes">0</b><span id="etiquetaContador"></span></div>
+
+    <div class="vacio" id="vacio">
+      <p>Todavía no hay nada en la lista</p>
+      <small>Escribe la primera película arriba</small>
+    </div>
+
+    <ul id="lista"></ul>
+
+    <p class="pie">Hecha entre dos.</p>
+  </main>
+
+  <div class="petalos">
+    <span style="left:12%;font-size:11px;animation-duration:11s;animation-delay:0s">♥</span>
+    <span style="left:34%;font-size:14px;animation-duration:13.5s;animation-delay:2.2s">♥</span>
+    <span style="left:51%;font-size:17px;animation-duration:16s;animation-delay:4.4s">♥</span>
+    <span style="left:68%;font-size:20px;animation-duration:18.5s;animation-delay:6.6s">♥</span>
+    <span style="left:85%;font-size:23px;animation-duration:21s;animation-delay:8.8s">♥</span>
+  </div>
+</div>
+
+<script>
+// ponytail: localStorage = los datos viven en ESTE navegador. Para compartir entre dispositivos, usar Supabase/Firebase.
+const CLAVE = 'peliculas';
+let peliculas;
+try { peliculas = JSON.parse(localStorage.getItem(CLAVE)) || []; } catch { peliculas = []; }
+
+function guardar() {
+  try { localStorage.setItem(CLAVE, JSON.stringify(peliculas)); } catch { alert('No se pudo guardar'); }
+  pintar();
+}
+
+function pintar() {
+  const ul = document.getElementById('lista');
+  ul.innerHTML = '';
+  peliculas.forEach((p, i) => {
+    const li = document.createElement('li');
+    li.className = p.vista ? 'vista' : '';
+    li.innerHTML = '<button class="corazon" aria-label="Marcar como vista">♥</button><span class="nombre"></span>'
+                 + '<span class="etiqueta">Vista</span><button class="quitar" aria-label="Quitar">×</button>';
+    li.querySelector('.nombre').textContent = p.nombre; // textContent: evita inyectar HTML
+    const corazon = li.querySelector('.corazon');
+    corazon.setAttribute('aria-pressed', !!p.vista);
+    corazon.onclick = () => { p.vista = !p.vista; guardar(); };
+    li.querySelector('.quitar').onclick = () => { peliculas.splice(i, 1); guardar(); };
+    ul.appendChild(li);
+  });
+  const pendientes = peliculas.filter(p => !p.vista).length;
+  document.getElementById('pendientes').textContent = pendientes;
+  document.getElementById('etiquetaContador').textContent = `${pendientes === 1 ? 'pendiente' : 'pendientes'} de ${peliculas.length}`;
+  document.getElementById('vacio').hidden = peliculas.length > 0;
+}
+
+document.getElementById('form').onsubmit = e => {
+  e.preventDefault();
+  const input = document.getElementById('nombre');
+  const nombre = input.value.trim();
+  if (!nombre) return;
+  peliculas.push({ nombre, vista: false });
+  input.value = '';
+  guardar();
+};
+
+pintar();
+</script>
+</body>
+</html>
