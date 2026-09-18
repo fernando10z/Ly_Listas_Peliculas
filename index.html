@@ -2,9 +2,10 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2a0b1c">
 <title>Nuestras Películas</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎬</text></svg>"><link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -55,11 +56,30 @@
   li.vista .nombre { font-weight:300; color:rgba(255,229,238,.42); text-decoration:line-through; text-decoration-color:rgba(255,169,194,.5); }
   li.vista .etiqueta { display:block; }
 
+  #musica { position:fixed; z-index:5; right:16px; bottom:max(16px, env(safe-area-inset-bottom)); width:48px; height:48px; border-radius:50%;
+    border:1px solid rgba(255,169,194,.3); background:rgba(42,11,28,.85); color:var(--accent); font-size:20px; cursor:pointer; }
+  #musica.pausa { color:rgba(255,229,238,.35); }
   .pie { margin:6px 0 0; font:italic 16px var(--serif); color:rgba(255,229,238,.4); }
 
   .petalos span { position:absolute; bottom:-20px; color:var(--accent); opacity:0; pointer-events:none; animation:floatUp linear infinite; }
   @keyframes floatUp { 0%{transform:translateY(0) scale(.9);opacity:0} 15%{opacity:.5} 100%{transform:translateY(-120px) scale(1.15);opacity:0} }
   @media (prefers-reduced-motion:reduce) { .petalos { display:none; } }
+
+
+  button { -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+  .fondo { min-height:100dvh; padding-bottom:max(28px, env(safe-area-inset-bottom)); }
+  @media (hover:none) { li:hover { border-color:rgba(255,169,194,.16); } .quitar:hover { background:transparent; color:rgba(255,229,238,.35); } }
+  @media (max-width:520px) {
+    form { flex-wrap:nowrap; padding:6px; }
+    form input { flex:1 1 0; padding:12px 14px; }
+    form button { padding:12px 18px; }
+    li { gap:12px; padding:12px 12px 12px 14px; border-radius:16px; }
+    .corazon { width:44px; height:44px; }
+    .quitar { width:44px; height:44px; font-size:22px; }
+    .nombre { font-size:16px; }
+    li.vista .etiqueta { display:none; }
+    header p { font-size:14px; }
+  }
 </style>
 </head>
 <body>
@@ -70,10 +90,6 @@
       <h1>Películas <em>para ver juntos</em></h1>
       <p>Agrega lo que quieras ver.</p>
     </header>
-
-    <!-- Spotify solo reproduce con un clic dentro de su reproductor: no se puede ocultar ni autoiniciar -->
-    <iframe style="border-radius:12px" src="https://open.spotify.com/embed/playlist/5ixfZy60DziUcaco2kaqBT?utm_source=generator&theme=0"
-      width="100%" height="152" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
 
     <form id="form">
       <input type="text" id="nombre" placeholder="¿Qué vemos esta noche?" aria-label="Nombre de la película">
@@ -92,6 +108,9 @@
     <p class="pie">Hecha entre dos.</p>
   </main>
 
+  <audio id="audio" preload="auto"></audio>
+  <button id="musica" class="pausa" hidden aria-label="Pausar o reproducir música">♫</button>
+
   <div class="petalos">
     <span style="left:12%;font-size:11px;animation-duration:11s;animation-delay:0s">♥</span>
     <span style="left:34%;font-size:14px;animation-duration:13.5s;animation-delay:2.2s">♥</span>
@@ -102,29 +121,49 @@
 </div>
 
 <script>
-// ponytail: localStorage = los datos viven en ESTE navegador. Para compartir entre dispositivos, usar Supabase/Firebase.
-const CLAVE = 'peliculas';
-let peliculas;
-try { peliculas = JSON.parse(localStorage.getItem(CLAVE)) || []; } catch { peliculas = []; }
+const SUPABASE_URL = 'https://xfrikkthpstupizekgta.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_nA3nx4AJFO3ZLeSOxBmMUA_V6k2mwUT';
+const API = `${SUPABASE_URL}/rest/v1/peliculas`;
+const HEADERS = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' };
 
-function guardar() {
-  try { localStorage.setItem(CLAVE, JSON.stringify(peliculas)); } catch { alert('No se pudo guardar'); }
+let peliculas = [];
+
+async function api(query = '', opciones = {}) {
+  const r = await fetch(API + query, { ...opciones, headers: { ...HEADERS, ...opciones.headers } });
+  const texto = await r.text();
+  if (!r.ok) throw new Error(texto);
+  return texto ? JSON.parse(texto) : null;
+}
+
+async function cargar() {
+  try { peliculas = await api('?select=*&order=id'); pintar(); }
+  catch (e) { console.error(e); }
+}
+
+async function enviar(peticion) {
   pintar();
+  try { await peticion; } catch (e) { console.error(e); alert('No se pudo guardar, revisa tu conexión'); cargar(); }
 }
 
 function pintar() {
   const ul = document.getElementById('lista');
   ul.innerHTML = '';
-  peliculas.forEach((p, i) => {
+  peliculas.forEach(p => {
     const li = document.createElement('li');
     li.className = p.vista ? 'vista' : '';
     li.innerHTML = '<button class="corazon" aria-label="Marcar como vista">♥</button><span class="nombre"></span>'
                  + '<span class="etiqueta">Vista</span><button class="quitar" aria-label="Quitar">×</button>';
-    li.querySelector('.nombre').textContent = p.nombre; // textContent: evita inyectar HTML
+    li.querySelector('.nombre').textContent = p.nombre;
     const corazon = li.querySelector('.corazon');
     corazon.setAttribute('aria-pressed', !!p.vista);
-    corazon.onclick = () => { p.vista = !p.vista; guardar(); };
-    li.querySelector('.quitar').onclick = () => { peliculas.splice(i, 1); guardar(); };
+    corazon.onclick = () => {
+      p.vista = !p.vista;
+      enviar(api(`?id=eq.${p.id}`, { method: 'PATCH', body: JSON.stringify({ vista: p.vista }) }));
+    };
+    li.querySelector('.quitar').onclick = () => {
+      peliculas = peliculas.filter(x => x !== p);
+      enviar(api(`?id=eq.${p.id}`, { method: 'DELETE' }));
+    };
     ul.appendChild(li);
   });
   const pendientes = peliculas.filter(p => !p.vista).length;
@@ -133,17 +172,56 @@ function pintar() {
   document.getElementById('vacio').hidden = peliculas.length > 0;
 }
 
-document.getElementById('form').onsubmit = e => {
+document.getElementById('form').onsubmit = async e => {
   e.preventDefault();
   const input = document.getElementById('nombre');
   const nombre = input.value.trim();
   if (!nombre) return;
-  peliculas.push({ nombre, vista: false });
   input.value = '';
-  guardar();
+  try {
+    const [nueva] = await api('', { method: 'POST', headers: { Prefer: 'return=representation' }, body: JSON.stringify({ nombre }) });
+    peliculas.push(nueva);
+    pintar();
+  } catch (err) { console.error(err); input.value = nombre; alert('No se pudo agregar, revisa tu conexión'); }
 };
 
-pintar();
+async function migrarLocal() {
+  let viejas;
+  try { viejas = JSON.parse(localStorage.getItem('peliculas')) || []; } catch { return; }
+  if (!viejas.length) return;
+  const enNube = new Set((await api('?select=nombre')).map(p => p.nombre));
+  const nuevas = viejas.filter(p => !enNube.has(p.nombre)).map(p => ({ nombre: p.nombre, vista: !!p.vista }));
+  if (nuevas.length) await api('', { method: 'POST', body: JSON.stringify(nuevas) });
+  localStorage.removeItem('peliculas');
+}
+
+document.addEventListener('visibilitychange', () => { if (!document.hidden) cargar(); });
+migrarLocal().catch(console.error).finally(cargar);
+
+const CANCIONES = [
+    'musica/sound1.mp3',
+  // 'musica/cancion2.mp3',
+];
+const audio = document.getElementById('audio');
+const botonMusica = document.getElementById('musica');
+let pista = 0, empezo = false;
+
+if (CANCIONES.length) {
+  botonMusica.hidden = false;
+  audio.src = CANCIONES[0];
+  audio.onended = () => { pista = (pista + 1) % CANCIONES.length; audio.src = CANCIONES[pista]; audio.play(); };
+  audio.onplay = () => botonMusica.classList.remove('pausa');
+  audio.onpause = () => botonMusica.classList.add('pausa');
+
+  const arrancar = e => {
+    if (empezo || e.target === botonMusica) return;
+    empezo = true;
+    audio.play().catch(() => { empezo = false; });
+  };
+  document.addEventListener('pointerup', arrancar, true);
+  document.addEventListener('keydown', arrancar, true);
+  botonMusica.onclick = () => { empezo = true; audio.paused ? audio.play() : audio.pause(); };
+}
 </script>
 </body>
 </html>
